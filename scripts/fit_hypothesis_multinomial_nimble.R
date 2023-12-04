@@ -26,17 +26,6 @@ dat <- read.csv(
   "./data/Traditional.species.hyps.with.analysis.units.csv"
 )
 
-
-# keep just the columns we want
-dat <- dat[,c("scientificName", "Hypothesis", "P.Hypothesis.",
-              "unit_type", "Body_mass_DD", "Foraging.strata_DD",
-              "analysis_unit")]
-# rename columns
-colnames(dat) <- c(
-  "species", "hypothesis", "p_hypothesis",
-  "unit_type", "mass", "foraging_strata","analysis_unit"
-)
-
 # read in analysis units to join other data
 aunit <- read.csv(
   "./data/analysis_units/diel_data.csv"
