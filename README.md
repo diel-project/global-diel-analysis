@@ -8,7 +8,8 @@ Our global diel analysis of mammals.
 2. [The working directory](#the-working-directory)
 3. [File and folder descriptions](#file-and-folder-descriptions)
 	1. [Data](#data-data)
-	2. [Scripts](#scripts-scripts)
+	2. [Nimble](#nimble-nimble)
+	3. [Scripts](#scripts-scripts)
 
 
 ## What's in this repository?
