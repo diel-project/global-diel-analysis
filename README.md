@@ -1,6 +1,6 @@
 
 # A repository for
-Our global diel analysis of mammals. 
+Devarajan et al. When the Wild Things Are: Defining Mammalian Diel Activity and Plasticity.
 
 ## README roadmap
 
