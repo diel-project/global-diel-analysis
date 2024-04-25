@@ -16,6 +16,7 @@ my_model <- nimble::nimbleCode(
           diur_trait_beta[1:ncov_trait],
           trait_dm[i, 1:ncov_trait]
         )
+        + diur_family_beta[family_vec[i]]
       )
       # nocturnal
       mu[i,3] <- exp(
@@ -29,7 +30,7 @@ my_model <- nimble::nimbleCode(
         ) + inprod(
           noct_trait_beta[1:ncov_trait],
           trait_dm[i, 1:ncov_trait]
-        )
+        ) + noct_family_beta[family_vec[i]]
       )
       mu_prob[i,1:3] <- mu[i,1:3] / sum(mu[i,1:3])
       y[i] ~ dcat(
@@ -44,6 +45,19 @@ my_model <- nimble::nimbleCode(
     #   zero_vec[1:nspecies],
     #   cov = Sigma[1:nspecies, 1:nspecies]
     # )
+    # family-level random effects
+    diur_family_sd ~ dgamma(1,1)
+    noct_family_sd ~ dgamma(1,1)
+    for(fam in 1:nfamily){
+      diur_family_beta[fam] ~ dnorm(
+        0,
+        sd = diur_family_sd
+      )
+      noct_family_beta[fam] ~ dnorm(
+        0,
+        sd = noct_family_sd
+      )
+    }
     for(k in 1:ncov_unit){
       diur_beta_mu[k] ~ dnorm(0, sd = 1)
       noct_beta_mu[k] ~ dnorm(0, sd = 1)

@@ -330,6 +330,7 @@ constant_list <- list(
     )
   ),
   nspecies = length(unique(dat$species)),
+  nfamily = length(unique(dat$family)),
   ncov_trait = ncol(trait_dm),
   ncov_unit = ncol(unit_dm),
   ndata = nrow(dat)
@@ -383,6 +384,14 @@ run_MCMC_allcode <- function(
         cons$ncov_unit,
         1,
         1
+      ),
+      diur_family_sd = rgamma(1,1,1),
+      noct_family_sd = rgamma(1,1,1),
+      diur_family_beta = rnorm(
+        cons$nfamily
+      ),
+      noct_family_beta = rnorm(
+        cons$nfamily
       )
     )
   }
