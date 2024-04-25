@@ -234,11 +234,62 @@ dat <- dplyr::inner_join(
   by = c("species" = "scientificName")
 )
 
+# Reorganize data to order by species, filename, and then
+#  mean date to generate an auto-regressive term.
+
+dat <- dat[order(
+  dat$species,
+  dat$file_name,
+  dat$mean_date
+),]
+
+dat$ar1 <- 0
+
+tmp_dat <- split(
+  dat,
+  factor(
+    paste(
+      dat$species,
+      dat$file_name,
+      sep = "-"
+    )
+  )
+)
+
+# generate term
+for(i in 1:length(tmp_dat)){
+  one_study <- tmp_dat[[i]]
+  if(nrow(one_study)>1){
+    day_diff <- diff(
+      one_study$mean_date
+    )
+    day_diff <- as.numeric(day_diff)
+    one_study$ar1[2:nrow(one_study)] <- day_diff 
+  }
+  tmp_dat[[i]] <- one_study
+}
+tmp_dat <- dplyr::bind_rows(
+  tmp_dat
+)
+tmp_dat$ar1[tmp_dat$ar1>365] <- 0
+
+# divide by 27, which is the median difference in days.
+tmp_dat$ar1 <- tmp_dat$ar1 / 27
+
+# now divide by reciprocal if > 0 so that longer time
+#  lags are close to 0, the median time lag is 
+#  1, and any shorter time lags are > 1.
+tmp_dat$ar1[tmp_dat$ar1>0] <- 1 / tmp_dat$ar1[tmp_dat$ar1>0]
+
+# overwrite dat
+dat <- tmp_dat
+
 unit_dm <- cbind(
   1,
   dat$lat_scale,
   dat$hpd_scale,
-  dat$ghf_scale
+  dat$ghf_scale,
+  dat$ar1
 )
 
 # species dm with inxs,
@@ -271,6 +322,11 @@ constant_list <- list(
   species_vec = as.numeric(
     factor(
       dat$species
+    )
+  ),
+  family_vec = as.numeric(
+    factor(
+      dat$family
     )
   ),
   nspecies = length(unique(dat$species)),
