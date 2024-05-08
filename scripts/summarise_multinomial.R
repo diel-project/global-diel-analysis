@@ -650,6 +650,7 @@ for(i in 1:3){
     mc$diur_trait_beta[,
       coef_loc[[i]]$trait
     ] %*% coef_loc[[i]]$trait_dm
+
   diur_unit_sum[,,i] <- apply(
     tmp,
     2,
@@ -687,7 +688,7 @@ diur_sum_plot <- diur_unit_sum[,
 
 }
 tiff(
-  "./plots/figure_s9_diurnality_slope_terms.tiff",
+  "./plots/figure_s5_diurnality_slope_terms.tiff",
   height = 6,
   width = 7,
   units = "in",
@@ -698,16 +699,16 @@ tiff(
 
 m <- matrix(1:3, ncol = 3)
 layout(m)
-my_pch <- c(18:20)
+my_pch <- rep(18,3)# c(18:20)
 par(mar = c(0.5,0.5,0.5,0.5), oma = c(5,0,0,0))
 my_type <- c("A) Latitude",
              "B) Hours per day", 
              "C) Global human footprint"
 )
 my_range <- list(
-  c(-20,20),
-  c(-20, 20),
-  c(-20,20)
+  c(-10,10),
+  c(-10, 10),
+  c(-10,10)
 )
 
 
@@ -834,7 +835,7 @@ both_sides <- diur_unit_sign + noct_unit_sign
 colSums(both_sides > 0)
 
 tiff(
-  "./plots/figure_s10_nocturnality_slope_terms.tiff",
+  "./plots/figure_s6_nocturnality_slope_terms.tiff",
   height = 6,
   width = 7,
   units = "in",
@@ -844,16 +845,16 @@ tiff(
 
 m <- matrix(1:3, ncol = 3)
 layout(m)
-my_pch <- c(18:20)
+my_pch <- rep(18,3) 
 par(mar = c(0.5,0.5,0.5,0.5), oma = c(5,0,0,0))
 my_type <- c("A) Latitude",
              "B) Hours per day", 
              "C) Global human footprint"
 )
 my_range <- list(
-  c(-15,15),
-  c(-15, 15),
-  c(-15,15)
+  c(-10,10),
+  c(-10, 10),
+  c(-10,10)
 )
 
 
@@ -4483,6 +4484,21 @@ for(i in 1:length(covariate)){
     mean_traits$hpd_mean,
     mean_traits$ghf_mean
   )
+  # get family vector to index the correct family level intercept
+  tmp_sp <- dplyr::distinct(
+    dat[,c("species", "family")]
+  )
+  tmp_sp <- tmp_sp[order(tmp_sp$species),]
+  
+  if(!all(tmp_sp$species == mean_traits$species)){
+    stop("Error in species names, fix.")
+  }
+  tmp_sp$family_vec <- as.numeric(
+    factor(
+      tmp_sp$family
+    )
+  )
+  
   sp_pred_noct <- mc$noct_unit_beta[,,1] +
     mc$noct_trait_beta[,1:5] %*% mean_trait_dm
   sp_pred_noct <- sweep(
@@ -4491,6 +4507,11 @@ for(i in 1:length(covariate)){
     mc$noct_beta_mu[,1],
     FUN = "+"
   )
+  # add on family-level random effect
+  for(j in 1:126){
+    sp_pred_noct[,j] <- sp_pred_noct[,j] + 
+      mc$noct_family_beta[,tmp_sp$family_vec[j]]
+  }
   sp_pred_diur <- mc$diur_unit_beta[,,1] +
     mc$diur_trait_beta[,1:5] %*% mean_trait_dm
   sp_pred_diur <- sweep(
@@ -4499,6 +4520,11 @@ for(i in 1:length(covariate)){
     mc$diur_beta_mu[,1],
     FUN = "+"
   )
+  # add on family-level random effect
+  for(j in 1:126){
+    sp_pred_diur[,j] <- sp_pred_diur[,j] + 
+      mc$diur_family_beta[,tmp_sp$family_vec[j]]
+  }
   sp_pred_noct <- exp(sp_pred_noct)
   sp_pred_diur <- exp(sp_pred_diur)
   denom <- 1 + sp_pred_noct + sp_pred_diur
@@ -4548,7 +4574,7 @@ for(i in 1:length(covariate)){
 
 
 tiff(
-  "./plots/figure_S5.tiff",
+  "./plots/figure_5_mean_pred_with_species_points.tiff",
   height = 12,
   width = 9,
   units = "in",
@@ -4585,7 +4611,8 @@ for(i in 1:5){
       bbplot::axis_text(
         c("Nocturnal", "Diurnal", "Cathemeral")[j],
         side = 3,
-        line = 0.7
+        line = 0.9,
+        cex = 1.5
       )
     }
       points(
