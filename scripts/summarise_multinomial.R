@@ -279,6 +279,16 @@ constant_list <- list(
       dat$species
     )
   ),
+  family_vec = as.numeric(
+    factor(
+      dat$family
+    )
+  ),
+  project_vec = as.numeric(
+    factor(
+      dat$file_name
+    )
+  ),
   nspecies = length(unique(dat$species)),
   ncov_trait = ncol(trait_dm),
   ncov_unit = ncol(unit_dm),
@@ -287,7 +297,7 @@ constant_list <- list(
 
 #### read in mcmc ####
 output <- readRDS(
-  "./nimble/unconstrained_results_20plus_suncalc_fix.RDS"
+  "./nimble/unconstrained_results_family_project_re.RDS"
 )
 mc <- do.call(
   "rbind",
@@ -426,6 +436,22 @@ mean_trait_dm <- rbind(
   mean_traits$hpd_mean,
   mean_traits$ghf_mean
 )
+
+# get family vector to index the correct family level intercept
+tmp_sp <- dplyr::distinct(
+  dat[,c("species", "family")]
+)
+tmp_sp <- tmp_sp[order(tmp_sp$species),]
+
+if(!all(tmp_sp$species == mean_traits$species)){
+  stop("Error in species names, fix.")
+}
+tmp_sp$family_vec <- as.numeric(
+  factor(
+    tmp_sp$family
+  )
+)
+
 sp_pred_noct <- mc$noct_unit_beta[,,1] +
   mc$noct_trait_beta[,1:5] %*% mean_trait_dm
 sp_pred_noct <- sweep(
@@ -434,6 +460,11 @@ sp_pred_noct <- sweep(
   mc$noct_beta_mu[,1],
   FUN = "+"
 )
+# add in the correct family-level variable
+for(i in 1:ncol(sp_pred_noct)){
+  sp_pred_noct[,i] <- sp_pred_noct[,i] + 
+    mc$noct_family_beta[,tmp_sp$family_vec[i]]
+}
 sp_pred_diur <- mc$diur_unit_beta[,,1] +
   mc$diur_trait_beta[,1:5] %*% mean_trait_dm
 sp_pred_diur <- sweep(
@@ -442,6 +473,10 @@ sp_pred_diur <- sweep(
   mc$diur_beta_mu[,1],
   FUN = "+"
 )
+for(i in 1:ncol(sp_pred_diur)){
+  sp_pred_diur[,i] <- sp_pred_diur[,i] + 
+    mc$diur_family_beta[,tmp_sp$family_vec[i]]
+}
 sp_pred_noct <- exp(sp_pred_noct)
 sp_pred_diur <- exp(sp_pred_diur)
 denom <- 1 + sp_pred_noct + sp_pred_diur
