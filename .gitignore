@@ -2,6 +2,9 @@
 .Rhistory
 .Rapp.history
 
+# R model objects
+*.ordbeta
+
 # Session Data files
 .RData
 .RDataTmp
