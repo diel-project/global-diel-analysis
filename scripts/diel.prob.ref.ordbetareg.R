@@ -1,7 +1,6 @@
 # Modeling and plotting of the analysis unit level model probabilities for each 
 # species' reference/literature diel categorization
 
-
 # We want to estimate the weighted (by sample size) species-level P(ref hypothesis)
 # from each analysis unit while controlling for family and project. Specifically, we want species 
 # nested within family nested in project. 
@@ -10,9 +9,6 @@
 # at species level variation within categorization.
 
 # Second, We want to do this jointly for all reference categorization to look at family-wise agreement
-
-setwd("C:/Users/C825033651/OneDrive - Colostate/Documents/GitHub/global-diel-analysis")
-
 
 ########################################################
 # Before modeling the data, here is an example of using a linear model function to do a weighted regression
@@ -56,7 +52,7 @@ setwd("C:/Users/C825033651/OneDrive - Colostate/Documents/GitHub/global-diel-ana
   
 ##################################  
 # Go grab data needed for our analysis. Make this TRUE or FALSE to switch datasets
-  model.probs.uniform=FALSE
+  model.probs.uniform=TRUE
   
   if(model.probs.uniform){
   #uniform data  
