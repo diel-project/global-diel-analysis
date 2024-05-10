@@ -36,7 +36,7 @@
   coef(lm(diurnal~1, weights=n))
 ########################################################
 # Get data and fit models
-  
+  setwd("C:/Users/C825033651/OneDrive - Colostate/Documents/GitHub/global-diel-analysis")
 # Load libraries
   library(dplyr)
   library(brms)
@@ -114,7 +114,21 @@
   length(unique(dat3$family.x))
   length(unique(dat3$file_name))
 
+########################################################  
+# We can either use all the species detected or a subset of species.
+# To evaluate whether results are different by focusing only on terrestrial
+# species >500 g, we can uncomment the below lines and subset the data...
 
+#  dat3=dat3[which(dat3$foraging_strata==1),]
+#  dat3=dat3[which(dat3$mass>500),]  
+  
+# We could also fit the model with a covariate- doing so shows no support for a difference  
+# dat3$cov=as.numeric((dat3$foraging_strata==1 | dat3$mass>500))
+# FYI- this is not done in the manuscript  
+########################################################  
+
+  
+  
 #Split data into diel reference categories- need to fit a model to each
   dat3.diurnal=dat3[which(dat3$hyp.ref=="Diurnal"),]
   dat3.noct=dat3[which(dat3$hyp.ref=="Nocturnal"),]
