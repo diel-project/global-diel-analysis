@@ -3364,15 +3364,34 @@ cloc <- list(
   unit = 4,
   trait = c(1,2,5, 12:14)
 )
+
+# get family vector to index the correct family level intercept
+tmp_sp <- dplyr::distinct(
+  dat[,c("species", "family")]
+)
+tmp_sp <- tmp_sp[order(tmp_sp$species),]
+
+if(!all(tmp_sp$species == mean_traits$species)){
+  stop("Error in species names, fix.")
+}
+tmp_sp$family_vec <- as.numeric(
+  factor(
+    tmp_sp$family
+  )
+)
+
+
 my_diff <- rep(NA, 126)
 y_ax <- rep(NA, 126)
+
 
 pb <- txtProgressBar(max = 126)
 for(i in 1:126){
   setTxtProgressBar(pb, i)
   noct_intercept <- mc$noct_beta_mu[,1] +
     mc$noct_unit_beta[,i,1] + 
-    mc$noct_trait_beta[,cloc$trait[1:3]] %*% t(ghf_dm[,1:3,i])
+    mc$noct_trait_beta[,cloc$trait[1:3]] %*% t(ghf_dm[,1:3,i]) +
+    mc$noct_family_beta[,tmp_sp$family_vec[i]]
   noct_slope <- mc$noct_beta_mu[,4] %*%t(pu) +
     mc$noct_unit_beta[,i,4] %*% t(pu) +
     mc$noct_trait_beta[,cloc$trait[4:6]] %*% t(ghf_dm[,4:6,i])
@@ -3380,7 +3399,8 @@ for(i in 1:126){
   noct <- exp(noct_intercept + noct_slope)
   diur_intercept <- mc$diur_beta_mu[,1] +
     mc$diur_unit_beta[,i,1] + 
-    mc$diur_trait_beta[,cloc$trait[1:3]] %*% t(ghf_dm[,1:3,i])
+    mc$diur_trait_beta[,cloc$trait[1:3]] %*% t(ghf_dm[,1:3,i]) +
+    mc$diur_family_beta[,tmp_sp$family_vec[i]]
   diur_slope <- mc$diur_beta_mu[,4] %*%t(pu) +
     mc$diur_unit_beta[,i,4] %*% t(pu) +
     mc$diur_trait_beta[,cloc$trait[4:6]] %*% t(ghf_dm[,4:6,i])
@@ -3403,7 +3423,7 @@ for(i in 1:126){
 
 tmp_dat <- data.frame(
   species = 
-    sp_traits$scientificName[which(noct_unit_sign[,3])],
+    sp_traits$scientificName[which(diur_unit_sign[,3])],
   diff = round(my_diff[which(noct_unit_sign[,3])],2),
   y = round(y_ax[which(noct_unit_sign[,3])],2),
   id = which(noct_unit_sign[,3])
@@ -3413,22 +3433,27 @@ tmp_dat <- tmp_dat[order(tmp_dat$diff, decreasing = TRUE),]
 tmp_dat
 # see which species have the largest positive change
 
-my_sp <- c(37, 97,51, 24, 112 )
+my_sp <- c(67, 51, 84, 39, 17)
+#my_sp <- c(37, 97,51, 24, 112 )
 #my_sp <- c(97,17,56, 124,67)
 
 top_species <- vector("list", length = length(my_sp))
 
+# get the family vector for these species
+top_sp <- tmp_sp$family_vec[my_sp]
 for(i in 1:length(my_sp)){
   noct_intercept <- mc$noct_beta_mu[,1] +
     mc$noct_unit_beta[,my_sp[i],1] + 
-    mc$noct_trait_beta[,cloc$trait[1:3]] %*% t(ghf_dm[,1:3,my_sp[i]])
+    mc$noct_trait_beta[,cloc$trait[1:3]] %*% t(ghf_dm[,1:3,my_sp[i]]) +
+    mc$noct_family_beta[,top_sp[i]]
   noct_slope <- mc$noct_beta_mu[,4] %*%t(pu) +
     mc$noct_unit_beta[,my_sp[i],4] %*% t(pu) +
     mc$noct_trait_beta[,cloc$trait[4:6]] %*% t(ghf_dm[,4:6,my_sp[i]])
   noct <- exp(noct_intercept + noct_slope)
   diur_intercept <- mc$diur_beta_mu[,1] +
     mc$diur_unit_beta[,my_sp[i],1] + 
-    mc$diur_trait_beta[,cloc$trait[1:3]] %*% t(ghf_dm[,1:3,my_sp[i]])
+    mc$diur_trait_beta[,cloc$trait[1:3]] %*% t(ghf_dm[,1:3,my_sp[i]]) +
+    mc$diur_family_beta[,top_sp[i]]
   diur_slope <- mc$diur_beta_mu[,4] %*%t(pu) +
     mc$diur_unit_beta[,my_sp[i],4] %*% t(pu) +
     mc$diur_trait_beta[,cloc$trait[4:6]] %*% t(ghf_dm[,4:6,my_sp[i]])
@@ -3445,11 +3470,11 @@ for(i in 1:length(my_sp)){
 
 sp_traits$scientificName[my_sp]
 sp_names <- c(
-  "D. virginiana",
-  "P. lotor",
+  "M. mephitis",
   "L. americanus",
-  "C. emini",
-  "T. terrestris"
+  "P. larvata",
+  "E. dorsatum",
+  "C. thous"
 )
 
 #sp_names <- c("P. lotor", "C. thous", "L. rufus", "U. arctos", "M. meles")
@@ -3526,6 +3551,14 @@ for(i in 1:5){
 }
 
 dev.off()
+
+
+
+test <- dat %>% 
+  dplyr::filter(species %in% sp_traits$scientificName[my_sp]) %>% 
+  dplyr::group_by(species) %>% 
+  dplyr::summarise(min = min(ghf_scale),
+                   max = max(ghf_scale))
 
 #### quantify plasticity ####
 
