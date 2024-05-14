@@ -240,7 +240,8 @@
     }
     species.diurnal.preds[,i]=species.level.mean
   }
-#Nocturnal  
+
+  #Nocturnal  
   for(i in 1:length(unique(dat3.noct$species))){
     index=which(colnames(pred.nocturnal)==unique(dat3.noct$species)[i])
     if(length(index)>1){
@@ -280,7 +281,26 @@
   post.mean.species.cath = round(post.mean.species.cath,digits=4)
   
   
-  
+species.probs.out =  data.frame(Species = c(rownames(post.mean.species.diurnal),
+                                            rownames(post.mean.species.nocturnal),
+                                            rownames(post.mean.species.cath),
+                                            unique(dat3.crep$species)
+                                            ),
+                                Literature = c(
+                                               rep("Diurnal",nrow(post.mean.species.diurnal)),
+                                               rep("Nocturnal",nrow(post.mean.species.nocturnal)),
+                                               rep("Cathemeral",nrow(post.mean.species.cath)),
+                                               rep("Crepuscular",length(unique(dat3.crep$species)))
+                                              ),
+                                Mean.probs=c(post.mean.species.diurnal$Post.Mean,
+                                             post.mean.species.nocturnal$Post.Mean,
+                                             post.mean.species.cath$Post.Mean,
+                                             rep(0,length(unique(dat3.crep$species))))
+                              )
+#re-order and output
+  species.probs.out=species.probs.out[order(species.probs.out$Literature,species.probs.out$Species),]
+  head(species.probs.out)
+  write.csv(species.probs.out,file="species.probs.out.csv")
 #What is the mean across species - this is the marginal mean from the sample
 
   dirunal.across.species.average=apply(species.diurnal.preds,1,mean)
@@ -597,7 +617,7 @@
 # Organize data for plotting below     
    family.preds.limited = family.preds.limited[order(family.preds.limited$family_mu,decreasing = TRUE),]
    fam.post.mean = family.preds.limited 
-     
+   write.csv(fam.post.mean,"family.probs.out.csv")
 ################################
 # plot family
     if(model.probs.uniform){filename="./plots/uniform_prior_family_accuracy.model.based2.tiff"}else{filename="./plots/informed_prior_family_accuracy.model.based2.tiff"}
