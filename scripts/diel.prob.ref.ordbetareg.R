@@ -36,7 +36,6 @@
   coef(lm(diurnal~1, weights=n))
 ########################################################
 # Get data and fit models
-  setwd("C:/Users/C825033651/OneDrive - Colostate/Documents/GitHub/global-diel-analysis")
 # Load libraries
   library(dplyr)
   library(brms)
