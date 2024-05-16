@@ -569,6 +569,39 @@ lines(
   lwd = 5
 )
 
+# make pred for mean latitude
+
+range(abs(dat$mean_lat))
+
+
+pvec <- c(0, 20)
+
+svec <- pvec
+svec <- (svec - mean(abs(dat$mean_lat))) / (
+  sd(abs(dat$mean_lat))
+)
+
+onepiece <- which(
+  trait_formula %in% c("mean_lat")
+)
+pred <- mc$noct_beta_mu[,1] + mc$noct_trait_beta[,onepiece] %*% rbind(svec)
+pred2 <-mc$diur_beta_mu[,1] + mc$diur_trait_beta[,onepiece] %*% rbind(svec)
+pred <- exp(pred)
+pred2 <- exp(pred2)
+
+denom <- 1 + pred + pred2
+pred_prob <- pred / denom
+
+mean_pred <- t(
+  apply(
+    pred_prob,
+    2,
+    quantile,
+    probs = c(0.025,0.5,0.975)
+  )
+)
+round(mean_pred,2)
+median(pred_prob[,1] / pred_prob[,2])
 
 #### summarise species level coefficients ####
 
@@ -832,7 +865,7 @@ noct_sp <- noct_sp[order(noct_sp$beta, decreasing = TRUE),]
 
 both_sides <- diur_unit_sign + noct_unit_sign
 
-colSums(both_sides > 0)
+colSums(both_sides > 0) / nrow(both_sides)
 
 tiff(
   "./plots/figure_s6_nocturnality_slope_terms.tiff",
@@ -960,7 +993,7 @@ pred <- exp(pred)
 pred2 <- exp(pred2)
 
 denom <- 1 + pred + pred2
-pred_prob <- pred2 / denom
+pred_prob <-pred2 / denom
 
 mean_pred <- t(
   apply(
@@ -1359,7 +1392,7 @@ ghf_mg$pvec <- pvec
 #### nocturnal plot start ####
 #windows(12,12)
 tiff(
-  "./plots/figure_s6_analysis_unit_plasticity_nocturnality2sd.tiff",
+  "./plots/analysis_unit_plasticity_nocturnality2sd.tiff",
   width = 12,
   height = 12,
   units = "in",
@@ -1493,7 +1526,7 @@ u <- par("usr")
 text(
   x = u[1] + ((u[2] - u[1]) * 0.025),
   y = 1.05,
-  label = "C) Mean latitude",
+  label = "C) Mean distance from equator",
   pos = 4,
   cex = 1.5
 )
@@ -1784,7 +1817,7 @@ dev.off()
 
 #windows(12,12)
 tiff(
-  "./plots/figure_s7_analysis_unit_plasticity_diurnality2sd.tiff",
+  "./plots/analysis_unit_plasticity_diurnality2sd.tiff",
   width = 12,
   height = 12,
   units = "in",
@@ -1920,7 +1953,7 @@ layout(m)
   text(
     x = u[1] + ((u[2] - u[1]) * 0.025),
     y = 1.05,
-    label = "C) Mean latitude",
+    label = "C) Mean distance from equator",
     pos = 4,
     cex = 1.5
   )
@@ -2211,7 +2244,7 @@ dev.off()
 
 
 tiff(
-  "./plots/figure_s8_analysis_unit_plasticity_cathemerality2sd.tiff",
+  "./plots/analysis_unit_plasticity_cathemerality2sd.tiff",
   width = 12,
   height = 12,
   units = "in",
@@ -2347,7 +2380,7 @@ layout(m)
   text(
     x = u[1] + ((u[2] - u[1]) * 0.025),
     y = 1.05,
-    label = "C) Mean latitude",
+    label = "C) Mean distance from equator",
     pos = 4,
     cex = 1.5
   )
@@ -3338,7 +3371,7 @@ dev.off()
 
 
 # unit level stuff
-pu <- seq(-6,4, length.out = 300)
+pu <- seq(-4,4, length.out = 300)
 
 ghf_dm <- array(
   NA,
@@ -3423,7 +3456,7 @@ for(i in 1:126){
 
 tmp_dat <- data.frame(
   species = 
-    sp_traits$scientificName[which(diur_unit_sign[,3])],
+    sp_traits$scientificName[which(noct_unit_sign[,3])],
   diff = round(my_diff[which(noct_unit_sign[,3])],2),
   y = round(y_ax[which(noct_unit_sign[,3])],2),
   id = which(noct_unit_sign[,3])
@@ -3433,7 +3466,7 @@ tmp_dat <- tmp_dat[order(tmp_dat$diff, decreasing = TRUE),]
 tmp_dat
 # see which species have the largest positive change
 
-my_sp <- c(67, 51, 84, 39, 17)
+my_sp <- c(67, 51, 119, 39, 17)
 #my_sp <- c(37, 97,51, 24, 112 )
 #my_sp <- c(97,17,56, 124,67)
 
@@ -3472,7 +3505,7 @@ sp_traits$scientificName[my_sp]
 sp_names <- c(
   "M. mephitis",
   "L. americanus",
-  "P. larvata",
+  "U. cinereoargenteus",
   "E. dorsatum",
   "C. thous"
 )
@@ -3483,6 +3516,12 @@ ci_ord <- rep(NA, 5)
 for(i in 1:length(my_sp)){
   ci_ord[i] <- mean(top_species[[i]][3,] - top_species[[i]][1,])
 }
+
+obs_range <- dat %>% 
+  dplyr::filter(species %in% sp_traits$scientificName[my_sp]) %>% 
+  dplyr::group_by(species) %>% 
+  dplyr::summarise(min = min(ghf_scale),
+                   max = max(ghf_scale))
 
 plot_ord <- order(ci_ord)
 
@@ -3496,10 +3535,10 @@ tiff(
   compression = "lzw"
 )
 
-par(mar = c(5,5,1,6), lend = 1)
+par(mar = c(5,5,1,8), lend = 1)
 
 bbplot::blank(
-  xlim = range(pu),
+  xlim = c(-4,4),
   ylim = c(0,1),
   bty = "l"
 )
@@ -3537,14 +3576,29 @@ for(i in 1:5){
     x = pu,
     y =top_species[[j]][2,],
     col = dcol[j],
-    lwd = 3
+    lwd = 2
+  )
+
+}
+for(i in 1:5){
+  j <- plot_ord[i]
+  
+  to_keep <- which(
+    pu >=obs_range$min[j] &
+      pu <= obs_range$max[j]
+  )
+  lines(
+    x = pu[to_keep],
+    y =top_species[[j]][2,to_keep],
+    col = dcol[j],
+    lwd = 8
   )
 }
 par(xpd = NA)
 for(i in 1:5){
   text(
     x = 3.9,
-    y = top_species[[i]][2,n] - 0.005,
+    y = top_species[[i]][2,n] - 0.005 + ifelse(i == 3, 0.025,0 ),
     pos = 4,
     labels = bquote(paste(italic(.(sp_names[i]))))
   )
@@ -3554,11 +3608,7 @@ dev.off()
 
 
 
-test <- dat %>% 
-  dplyr::filter(species %in% sp_traits$scientificName[my_sp]) %>% 
-  dplyr::group_by(species) %>% 
-  dplyr::summarise(min = min(ghf_scale),
-                   max = max(ghf_scale))
+
 
 #### quantify plasticity ####
 
@@ -3582,6 +3632,20 @@ mean_trait_dm <- rbind(
   mean_traits$ghf_mean
 )
 
+# get family vector to index the correct family level intercept
+tmp_sp <- dplyr::distinct(
+  dat[,c("species", "family")]
+)
+tmp_sp <- tmp_sp[order(tmp_sp$species),]
+
+if(!all(tmp_sp$species == mean_traits$species)){
+  stop("Error in species names, fix.")
+}
+tmp_sp$family_vec <- as.numeric(
+  factor(
+    tmp_sp$family
+  )
+)
 
 
 coef_loc <-  list(
@@ -3602,8 +3666,6 @@ coef_loc <-  list(
       1,
       unit_df$hpd
     )
-    
-    
   ),
   ghf = list(
     unit = c(1,4),
@@ -3623,8 +3685,12 @@ sp_sd <- array(
 
 sd_posterior <- vector(
   "list",
-  length = 129
+  length = 126
 )
+
+
+
+
 pb <- txtProgressBar(max = 126)
 for(j in 1:126){
   setTxtProgressBar(pb, j)
@@ -3660,13 +3726,26 @@ for(j in 1:126){
     ) %*% coef_loc[[i]]$unit_dm  +
     mc$diur_trait_beta[,coef_loc[[i]]$trait] %*%
     tmp_trait_dm
-  
+  tmp_diur <- sweep(
+    tmp_diur,
+     1,
+    mc$diur_family_beta[,tmp_sp$family_vec[j]],
+    "+"
+  )
+    
   tmp_noct <-  (
     mc$noct_beta_mu[, coef_loc[[i]]$unit] +
       mc$noct_unit_beta[,j,coef_loc[[i]]$unit]
   ) %*% coef_loc[[i]]$unit_dm  +
     mc$noct_trait_beta[,coef_loc[[i]]$trait] %*%
-    tmp_trait_dm
+    tmp_trait_dm + 
+    mc$noct_family_beta[,tmp_sp$family_vec[j]]
+  tmp_noct <- sweep(
+    tmp_noct,
+    1,
+    mc$noct_family_beta[,tmp_sp$family_vec[j]],
+    "+"
+  )
   
   tmp_diur <- exp(tmp_diur)
   tmp_noct <- exp(tmp_noct)
@@ -3717,7 +3796,26 @@ for(j in 1:126){
   }
 }
 
+# DO SUBSETTING HERE MASON
+# get observed range of scaled covariates
+obs_range <- dat %>% 
+  dplyr::group_by(species) %>% 
+  dplyr::summarise(
+    min_lat = min(lat_scale),
+    max_lat = max(lat_scale),
+    min_hpd = min(hpd_scale),
+    max_hpd = max(hpd_scale),
+    min_ghf = min(ghf_scale),
+    max_ghf = max(ghf_scale)
+  )
+
+
 sd_sum <- matrix(
+  NA,
+  ncol = 3,
+  nrow = 126
+)
+sd_sum_subset <- matrix(
   NA,
   ncol = 3,
   nrow = 126
