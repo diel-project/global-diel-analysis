@@ -4,6 +4,7 @@ library(bbplot)
 source("./scripts/mcmc_utility.R")
 
 
+
 #### read in data ####
 {
 # read in data and all that
@@ -3604,10 +3605,9 @@ for(i in 1:5){
   )
 }
 
+
+
 dev.off()
-
-
-
 
 
 #### quantify plasticity ####
@@ -3680,7 +3680,7 @@ coef_loc <-  list(
 
 sp_sd <- array(
   NA,
-  dim = c(3,200,3, 129, 3)
+  dim = c(3,200,3, 126, 3)
 )
 
 sd_posterior <- vector(
@@ -3796,7 +3796,7 @@ for(j in 1:126){
   }
 }
 
-# DO SUBSETTING HERE MASON
+
 # get observed range of scaled covariates
 obs_range <- dat %>% 
   dplyr::group_by(species) %>% 
@@ -3807,8 +3807,7 @@ obs_range <- dat %>%
     max_hpd = max(hpd_scale),
     min_ghf = min(ghf_scale),
     max_ghf = max(ghf_scale)
-  )
-
+)
 
 sd_sum <- matrix(
   NA,
@@ -3820,8 +3819,16 @@ sd_sum_subset <- matrix(
   ncol = 3,
   nrow = 126
 )
+my_covar <- c("lat", "hpd", "ghf")
+
+obs_range_locs <- vector("list", 3)
 for(j in 1:3){
+  obs_range_locs[[j]] <- vector(
+    "list",
+    length = 126
+  )
   for(k in 1:126){
+    # Calculate across entire predicted range
     tmp <- sp_sd[2,,,k,j]
     tmp_sd <- apply(
       tmp,
@@ -3830,6 +3837,24 @@ for(j in 1:3){
     )
     #get max sd to represent most change
     sd_sum[k,j] <- max(tmp_sd)
+    # do same but for the observed range
+    range_vals <- grab(obs_range[k,], my_covar[j])
+    range_vals <- as.numeric(range_vals)
+    to_keep <- which(
+      grab(unit_df, my_covar[j]) >=
+        range_vals[1] &
+      grab(unit_df, my_covar[j]) <=
+        range_vals[2]
+    )
+    obs_range_locs[[j]][[k]] <- to_keep
+    if(length(to_keep)>3){
+      tmp_sd <- apply(
+        tmp[to_keep,],
+        2,
+        sd
+      )
+      sd_sum_subset[k,j] <- max(tmp_sd)
+    }
   }
 }
 
@@ -3837,8 +3862,13 @@ for(j in 1:3){
 
 
 
+#my_order <- order(
+#  sd_sum[,1],
+#  decreasing = TRUE
+#)
+
 my_order <- order(
-  sd_sum[,1],
+  sd_sum_subset[,1],
   decreasing = TRUE
 )
 
@@ -3848,7 +3878,7 @@ my_order <- order(
 #unit_df$mean_lat[species_switch] * 20
 
 tiff(
-  "./plots/figure_s12_most_plastic_lat.tiff",
+  "./plots/most_plastic_lat.tiff",
   height = 10,
   width = 10,
   units = "in",
@@ -3894,7 +3924,14 @@ for(i in 1:9){
       x = unit_df$mean_lat * 20,
       y = sp_sd[2,,j,my_order[i],1],
       col = my_cols[c(2,3,1)][j],
-      lwd = 4
+      lwd = 2
+    )
+
+    lines(
+      x = unit_df$mean_lat[obs_range_locs[[1]][[my_order[i]]]] * 20,
+      y = sp_sd[2,obs_range_locs[[1]][[my_order[i]]],j,my_order[i],1],
+      col = my_cols[c(2,3,1)][j],
+      lwd = 8
     )
   }
   if(i %in% c(7:9)){
@@ -3943,13 +3980,13 @@ dev.off()
 
 
 my_order <- order(
-  sd_sum[,2],
+  sd_sum_subset[,2],
   decreasing = TRUE
 )
 
 
 tiff(
-  "./plots/figure_s13_most_plastic_hpd.tiff",
+  "./plots/most_plastic_hpd.tiff",
   height = 10,
   width = 10,
   units = "in",
@@ -3995,7 +4032,13 @@ for(i in 1:9){
       x = unit_df$hpd,
       y = sp_sd[2,,j,my_order[i],2],
       col = my_cols[c(2,3,1)][j],
-      lwd = 4
+      lwd = 2
+    )
+    lines(
+      x = unit_df$hpd[obs_range_locs[[2]][[my_order[i]]]],
+      y = sp_sd[2,obs_range_locs[[2]][[my_order[i]]],j,my_order[i],2],
+      col = my_cols[c(2,3,1)][j],
+      lwd = 8
     )
   }
   if(i %in% c(7:9)){
@@ -4044,13 +4087,14 @@ dev.off()
 
 
 my_order <- order(
-  sd_sum[,3],
+  sd_sum_subset[,3],
   decreasing = TRUE
 )
 
 
+
 tiff(
-  "./plots/figure_s14_most_plastic_ghf.tiff",
+  "./plots/most_plastic_ghf.tiff",
   height = 10,
   width = 10,
   units = "in",
@@ -4094,7 +4138,13 @@ for(i in 1:9){
       x = unit_df$ghf,
       y = sp_sd[2,,j,my_order[i],3],
       col = my_cols[c(2,3,1)][j],
-      lwd = 4
+      lwd = 2
+    )
+    lines(
+      x = unit_df$ghf[obs_range_locs[[3]][[my_order[i]]]],
+      y = sp_sd[2,obs_range_locs[[3]][[my_order[i]]],j,my_order[i],3],
+      col = my_cols[c(2,3,1)][j],
+      lwd = 8
     )
   }
   if(i %in% c(7:9)){
@@ -4142,13 +4192,13 @@ dev.off()
 
 
 my_order <- order(
-  sd_sum[,1],
+  sd_sum_subset[,1],
   decreasing = FALSE
 )
 
 
 tiff(
-  "./plots/figure_s15_least_plastic_lat.tiff",
+  "./plots/least_plastic_lat.tiff",
   height = 10,
   width = 10,
   units = "in",
@@ -4194,7 +4244,13 @@ for(i in 1:9){
       x = unit_df$mean_lat * 20,
       y = sp_sd[2,,j,my_order[i],1],
       col = my_cols[c(2,3,1)][j],
-      lwd = 4
+      lwd = 2
+    )
+    lines(
+      x = unit_df$mean_lat[obs_range_locs[[1]][[my_order[i]]]] * 20,
+      y = sp_sd[2,obs_range_locs[[1]][[my_order[i]]],j,my_order[i],1],
+      col = my_cols[c(2,3,1)][j],
+      lwd = 8
     )
   }
   if(i %in% c(7:9)){
@@ -4243,13 +4299,13 @@ dev.off()
 
 
 my_order <- order(
-  sd_sum[,2],
+  sd_sum_subset[,2],
   decreasing = FALSE
 )
 
 
 tiff(
-  "./plots/figure_s16_least_plastic_hpd.tiff",
+  "./plots/least_plastic_hpd.tiff",
   height = 10,
   width = 10,
   units = "in",
@@ -4295,7 +4351,13 @@ for(i in 1:9){
       x = unit_df$hpd,
       y = sp_sd[2,,j,my_order[i],2],
       col = my_cols[c(2,3,1)][j],
-      lwd = 4
+      lwd = 2
+    )
+    lines(
+      x = unit_df$hpd[obs_range_locs[[2]][[my_order[i]]]],
+      y = sp_sd[2,obs_range_locs[[2]][[my_order[i]]],j,my_order[i],2],
+      col = my_cols[c(2,3,1)][j],
+      lwd = 8
     )
   }
   if(i %in% c(7:9)){
@@ -4344,13 +4406,13 @@ dev.off()
 
 
 my_order <- order(
-  sd_sum[,3],
+  sd_sum_subset[,3],
   decreasing = FALSE
 )
 
 
 tiff(
-  "./plots/figure_s17_least_plastic_ghf.tiff",
+  "./plots/least_plastic_ghf.tiff",
   height = 10,
   width = 10,
   units = "in",
@@ -4394,7 +4456,13 @@ for(i in 1:9){
       x = unit_df$ghf,
       y = sp_sd[2,,j,my_order[i],3],
       col = my_cols[c(2,3,1)][j],
-      lwd = 4
+      lwd = 2
+    )
+    lines(
+      x = unit_df$ghf[obs_range_locs[[3]][[my_order[i]]]],
+      y = sp_sd[2,obs_range_locs[[3]][[my_order[i]]],j,my_order[i],3],
+      col = my_cols[c(2,3,1)][j],
+      lwd = 8
     )
   }
   if(i %in% c(7:9)){
