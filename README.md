@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/725224540.svg)](https://zenodo.org/doi/10.5281/zenodo.12725408)
 
 # A repository for
 Devarajan et al. When the Wild Things Are: Defining Mammalian Diel Activity and Plasticity.
