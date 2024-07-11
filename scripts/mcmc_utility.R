@@ -164,3 +164,6 @@ gen_preds_unit_inxs <- function(
   )
   return(to_return)
 }
+
+grab <- function(x, y) {x[,grep(y,colnames(x))]}
+

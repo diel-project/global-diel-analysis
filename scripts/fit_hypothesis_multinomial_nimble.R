@@ -1,8 +1,8 @@
 library(nimble)
 library(dplyr)
 library(lubridate)
-library(ape)
-library(phytools)
+#library(ape)
+#library(phytools)
 library(parallel)
 
 
@@ -234,6 +234,58 @@ dat <- dplyr::inner_join(
   by = c("species" = "scientificName")
 )
 
+# # Reorganize data to order by species, filename, and then
+# #  mean date to generate an auto-regressive term.
+# 
+# dat <- dat[order(
+#   dat$species,
+#   dat$file_name,
+#   dat$mean_date
+# ),]
+# 
+# dat$ar1 <- 0
+# dat$lag_
+# 
+# tmp_dat <- split(
+#   dat,
+#   factor(
+#     paste(
+#       dat$species,
+#       dat$file_name,
+#       sep = "-"
+#     )
+#   )
+# )
+# 
+# # generate term
+# for(i in 1:length(tmp_dat)){
+#   one_study <- tmp_dat[[i]]
+#   if(nrow(one_study)>1){
+#     day_diff <- diff(
+#       one_study$mean_date
+#     )
+#     day_diff <- as.numeric(day_diff)
+#     one_study$ar1[2:nrow(one_study)] <- day_diff 
+#   }
+#   tmp_dat[[i]] <- one_study
+# }
+# tmp_dat <- dplyr::bind_rows(
+#   tmp_dat
+# )
+# tmp_dat$ar1[tmp_dat$ar1>365] <- 0
+# 
+# # divide by 27, which is the median difference in days.
+# tmp_dat$ar1 <- tmp_dat$ar1 / 27
+# 
+# # now divide by reciprocal if > 0 so that longer time
+# #  lags are close to 0, the median time lag is 
+# #  1, and any shorter time lags are > 1.
+# #tmp_dat$ar1[tmp_dat$ar1>0] <- 1 / tmp_dat$ar1[tmp_dat$ar1>0]
+# 
+# 
+# # overwrite dat
+# dat <- tmp_dat
+
 unit_dm <- cbind(
   1,
   dat$lat_scale,
@@ -273,7 +325,19 @@ constant_list <- list(
       dat$species
     )
   ),
+  family_vec = as.numeric(
+    factor(
+      dat$family
+    )
+  ),
+  project_vec = as.numeric(
+    factor(
+      dat$file_name
+    )
+  ),
   nspecies = length(unique(dat$species)),
+  nfamily = length(unique(dat$family)),
+  nproject = length(unique(dat$file_name)),
   ncov_trait = ncol(trait_dm),
   ncov_unit = ncol(unit_dm),
   ndata = nrow(dat)
@@ -327,6 +391,22 @@ run_MCMC_allcode <- function(
         cons$ncov_unit,
         1,
         1
+      ),
+      diur_family_sd = rgamma(1,1,1),
+      noct_family_sd = rgamma(1,1,1),
+      diur_family_beta = rnorm(
+        cons$nfamily
+      ),
+      noct_family_beta = rnorm(
+        cons$nfamily
+      ),
+      diur_project_sd = rgamma(1,1,1),
+      noct_project_sd = rgamma(1,1,1),
+      diur_project_beta = rnorm(
+        cons$nproject
+      ),
+      noct_project_beta = rnorm(
+        cons$nproject
       )
     )
   }
@@ -386,10 +466,19 @@ stopCluster(this_cluster)
 
 saveRDS(
   chain_output,
-  "./nimble/unconstrained_results_20plus_suncalc_fix.RDS"
+  "./nimble/unconstrained_results_family_project_re.RDS"
 )
 my_end <- Sys.time()
 my_end - my_start
 # clear everything and run again
 rm(list = ls())
 gc()
+
+
+dat <- readRDS("./nimble/unconstrained_results_family_project_re.RDS")
+
+library(MCMCvis)
+
+msum <- MCMCvis::MCMCsummary(
+  dat, round = 2
+)
